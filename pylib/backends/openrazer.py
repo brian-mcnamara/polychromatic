@@ -491,6 +491,38 @@ class Backend(_backend.Backend):
 
                 options.append(effect_option)
 
+            # There isn't a single 'lighting_breath' and 'lighting_starlight' in the capabilities list
+            # -- Breath has up to 4 parameters.
+            if _device_has_zone_capability("pulsate_mono"):
+                effect_option = {
+                    "id": "breath",
+                    "label": effect_labels["breath"],
+                    "type": "effect",
+                    "parameters": [{
+                        "data": "mono",
+                        "colours": []
+                    }],
+                    "colours": [],
+                    "active": current_state["effect"].startswith("breath")
+                }
+
+                options.append(effect_option)
+
+            if _device_has_zone_capability("static_mono"):
+                effect_option = {
+                    "id": "static",
+                    "label": effect_labels["static"],
+                    "type": "effect",
+                    "parameters": [{
+                        "data": "mono",
+                        "colours": []
+                    }],
+                    "colours": [],
+                    "active": current_state["effect"].startswith("static")
+                }
+
+                options.append(effect_option)
+
             # Older hardware that use the "BW2013" protocol
             try:
                 if "razer.device.lighting.bw2013" in rdevice._available_features.keys():
@@ -924,6 +956,10 @@ class Backend(_backend.Backend):
                 self._write_persistence_storage_fallback(rdevice, zone, rzone, "effect", "blinking")
                 self._write_persistence_storage_fallback(rdevice, zone, rzone, "colour_1", colour_hex[0])
 
+            elif option_id == "breath" and option_data == "mono":
+                rzone.pulsate_mono()
+                self._write_persistence_storage_fallback(rdevice, zone, rzone, "effect", "breathMono")
+            
             elif option_id == "breath" and option_data == "random":
                 rzone.breath_random()
                 self._write_persistence_storage_fallback(rdevice, zone, rzone, "effect", "breathRandom")
@@ -1000,10 +1036,13 @@ class Backend(_backend.Backend):
                     self._write_persistence_storage_fallback(rdevice, zone, rzone, "colour_2", colour_hex[1])
 
             elif option_id == "static":
-                # Params: <red> <green> <blue>
-                rzone.static(colour_1[0], colour_1[1], colour_1[2])
-                self._write_persistence_storage_fallback(rdevice, zone, rzone, "effect", "static")
-                self._write_persistence_storage_fallback(rdevice, zone, rzone, "colour_1", colour_hex[0])
+                if option_data == "mono":
+                    rzone.static_mono()
+                else:
+                    # Params: <red> <green> <blue>
+                    rzone.static(colour_1[0], colour_1[1], colour_1[2])
+                    self._write_persistence_storage_fallback(rdevice, zone, rzone, "effect", "static")
+                    self._write_persistence_storage_fallback(rdevice, zone, rzone, "colour_1", colour_hex[0])
 
             elif option_id == "bw2013_pulsate":
                 self._workaround_bw2013_pylib(rdevice, "pulsate")
